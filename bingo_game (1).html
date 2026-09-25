@@ -1,0 +1,529 @@
+<!DOCTYPE html>
+<html lang="th" class="h-full">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>กองการสื่อสาร BINGO GAME</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Prompt', sans-serif;
+            background: radial-gradient(circle at center, #0f172a 0%, #050b14 100%);
+            color: #f8fafc;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        .glow-title {
+            text-shadow: 0 0 20px rgba(56, 189, 248, 0.6), 0 0 40px rgba(245, 158, 11, 0.4);
+        }
+        .glow-card {
+            box-shadow: 0 0 30px rgba(56, 189, 248, 0.25), inset 0 0 15px rgba(245, 158, 11, 0.15);
+        }
+        .bingo-cell {
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .bingo-cell:hover {
+            transform: scale(1.04);
+        }
+        @keyframes pulseGlow {
+            0%, 100% { box-shadow: 0 0 15px rgba(56, 189, 248, 0.4); }
+            50% { box-shadow: 0 0 30px rgba(245, 158, 11, 0.8); }
+        }
+        .logo-glow {
+            animation: pulseGlow 3s infinite ease-in-out;
+        }
+        @keyframes bounceSlow {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-8px); }
+        }
+        .animate-bounce-slow {
+            animation: bounceSlow 2.5s infinite ease-in-out;
+        }
+        /* Custom scrollbar */
+        ::-webkit-scrollbar {
+            width: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #3b82f6;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body class="flex flex-col min-h-full relative select-none">
+
+    <canvas id="fireworksCanvas" class="fixed inset-0 pointer-events-none z-50 hidden w-full h-full"></canvas>
+
+    <header class="w-full py-6 px-4 bg-slate-900/80 backdrop-blur-md border-b border-blue-500/30 sticky top-0 z-40 shadow-xl">
+        <div class="max-w-4xl mx-auto flex flex-col sm:flex-row items-center justify-between gap-4">
+            <div class="flex items-center space-x-4">
+                <div class="relative">
+                    <div class="absolute -inset-1 bg-gradient-to-r from-amber-400 to-blue-500 rounded-full blur opacity-75 animate-pulse"></div>
+                    <img src="505246.jpg" alt="โลโก้กองการสื่อสาร" class="relative w-16 h-16 sm:w-20 sm:h-20 object-cover rounded-full border-2 border-amber-400 shadow-lg logo-glow" onerror="this.src='https://placehold.co/100x100/1e293b/38bdf8?text=COMM'">
+                </div>
+                <div>
+                    <h1 class="text-2xl sm:text-3xl font-extxl font-bold bg-gradient-to-r from-amber-300 via-blue-200 to-cyan-400 bg-clip-text text-transparent glow-title">
+                        กองการสื่อสาร BINGO
+                    </h1>
+                    <p class="text-xs sm:text-sm text-blue-300 font-medium tracking-wide">
+                        Communications Department Interactive Bingo Game
+                    </p>
+                </div>
+            </div>
+            
+            <div class="flex items-center space-x-3">
+                <button id="soundToggleBtn" onclick="toggleSound()" class="flex items-center space-x-2 bg-slate-800 hover:bg-slate-700 text-blue-300 px-4 py-2 rounded-xl border border-blue-500/40 transition shadow-md active:scale-95">
+                    <span id="soundIcon">🔊</span>
+                    <span class="text-sm font-semibold">เปิดเสียง</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="flex-grow flex flex-col items-center justify-center p-4 sm:p-6 max-w-4xl mx-auto w-full">
+        
+        <!-- Instructions / Status Card -->
+        <div class="w-full bg-slate-900/60 backdrop-blur-md border border-blue-500/30 rounded-2xl p-4 mb-6 text-center glow-card">
+            <div class="flex flex-wrap justify-center items-center gap-4 text-sm font-medium">
+                <div class="flex items-center space-x-2 text-cyan-300">
+                    <span class="w-3 h-3 rounded-full bg-cyan-400 animate-ping"></span>
+                    <span>คลิกตัวเลขบนกระดานเมื่อมีการประกาศหมายเลข</span>
+                </div>
+                <div class="text-amber-400 font-bold bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30" id="bingoStatus">
+                    สถานะ: กำลังเล่น (0 แถวบิงโก)
+                </div>
+            </div>
+        </div>
+
+        <div class="w-full max-w-xl bg-gradient-to-b from-slate-900/90 to-slate-950/90 p-4 sm:p-6 rounded-3xl border-2 border-blue-500/40 shadow-2xl glow-card relative">
+            
+            <!-- B-I-N-G-O Headers -->
+            <div class="grid grid-cols-5 gap-2 sm:gap-3 mb-3 text-center">
+                <div class="bg-gradient-to-br from-blue-600 to-indigo-700 text-white font-black text-xl sm:text-2xl py-3 rounded-xl shadow-lg border-b-4 border-blue-800">B</div>
+                <div class="bg-gradient-to-br from-indigo-600 to-purple-700 text-white font-black text-xl sm:text-2xl py-3 rounded-xl shadow-lg border-b-4 border-indigo-800">I</div>
+                <div class="bg-gradient-to-br from-amber-500 to-orange-600 text-white font-black text-xl sm:text-2xl py-3 rounded-xl shadow-lg border-b-4 border-amber-700">N</div>
+                <div class="bg-gradient-to-br from-teal-600 to-emerald-700 text-white font-black text-xl sm:text-2xl py-3 rounded-xl shadow-lg border-b-4 border-teal-800">G</div>
+                <div class="bg-gradient-to-br from-cyan-600 to-blue-700 text-white font-black text-xl sm:text-2xl py-3 rounded-xl shadow-lg border-b-4 border-cyan-800">O</div>
+            </div>
+
+            <!-- 5x5 Cells Grid -->
+            <div id="bingoGrid" class="grid grid-cols-5 gap-2 sm:gap-3">
+                <!-- Javascript will inject 25 cells here -->
+            </div>
+
+            <!-- Action Controls -->
+            <div class="mt-6 flex flex-col sm:flex-row gap-3 justify-center">
+                <button onclick="generateNewCard()" class="flex-1 bg-gradient-to-r from-blue-600 to-indigo-600 hover:from-blue-500 hover:to-indigo-500 text-white font-bold py-3 px-6 rounded-2xl shadow-lg border border-blue-400/40 transition active:scale-95 flex items-center justify-center space-x-2">
+                    <span>🔄</span>
+                    <span>สุ่มการ์ดใหม่ (New Card)</span>
+                </button>
+                <button onclick="resetCard()" class="bg-slate-800 hover:bg-slate-700 text-slate-300 hover:text-white font-bold py-3 px-6 rounded-2xl shadow-lg border border-slate-700 transition active:scale-95 flex items-center justify-center space-x-2">
+                    <span>🧹</span>
+                    <span>ล้างเครื่องหมาย</span>
+                </button>
+            </div>
+        </div>
+    </main>
+
+    <footer class="py-4 text-center text-xs text-slate-400 border-t border-slate-800 bg-slate-950/40">
+        กองการสื่อสาร © 2026 - All Rights Reserved | Interactive Bingo Web Application
+    </footer>
+
+    <!-- Victory Modal -->
+    <div id="victoryModal" class="fixed inset-0 bg-black/80 backdrop-blur-md z-50 flex items-center justify-center p-4 opacity-0 pointer-events-none transition-all duration-300">
+        <div class="bg-gradient-to-b from-slate-900 to-slate-950 border-2 border-amber-400 rounded-3xl p-8 max-w-md w-full text-center shadow-2xl transform scale-95 transition-all duration-300" id="victoryModalContent">
+            <div class="w-20 h-20 bg-amber-500/20 border-2 border-amber-400 rounded-full flex items-center justify-center mx-auto mb-4 animate-bounce-slow">
+                <span class="text-4xl">🏆</span>
+            </div>
+            <h2 class="text-3xl font-extrabold text-amber-400 mb-2 glow-title">BINGO! ยอดเยี่ยมมาก!</h2>
+            <p class="text-slate-300 mb-6">คุณได้ทำเครื่องหมายครบแถวในเกมของกองการสื่อสารเรียบร้อยแล้ว!</p>
+            <div class="flex gap-3 justify-center">
+                <button onclick="closeVictoryModal()" class="bg-gradient-to-r from-amber-500 to-orange-500 hover:from-amber-400 hover:to-orange-400 text-slate-950 font-bold py-3 px-8 rounded-2xl shadow-lg transition active:scale-95">
+                    เล่นต่อ / ปิดหน้าต่าง
+                </button>
+                <button onclick="generateNewCard(); closeVictoryModal();" class="bg-slate-800 hover:bg-slate-700 text-white font-bold py-3 px-6 rounded-2xl shadow-lg transition active:scale-95">
+                    การ์ดใบใหม่
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Audio Context Setup
+        let audioCtx = null;
+        let soundEnabled = true;
+
+        function initAudio() {
+            if (!audioCtx) {
+                audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+            }
+        }
+
+        function toggleSound() {
+            soundEnabled = !soundEnabled;
+            const icon = document.getElementById('soundIcon');
+            const btnText = document.getElementById('soundToggleBtn').querySelector('span:nth-child(2)');
+            if (soundEnabled) {
+                icon.innerText = '🔊';
+                btnText.innerText = 'เปิดเสียง';
+                initAudio();
+                playClickSound();
+            } else {
+                icon.innerText = '🔇';
+                btnText.innerText = 'ปิดเสียง';
+            }
+        }
+
+        function playClickSound() {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(440, audioCtx.currentTime);
+                osc.frequency.exponentialRampToValueAtTime(880, audioCtx.currentTime + 0.08);
+                gain.gain.setValueAtTime(0.15, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.08);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.08);
+            } catch (e) { console.error(e); }
+        }
+
+        function playMarkSound() {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const osc = audioCtx.createOscillator();
+                const gain = audioCtx.createGain();
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(587.33, audioCtx.currentTime); // D5
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime + 0.05); // A5
+                gain.gain.setValueAtTime(0.2, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.15);
+                osc.connect(gain);
+                gain.connect(audioCtx.destination);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.15);
+            } catch (e) { console.error(e); }
+        }
+
+        function playVictoryFanfare() {
+            if (!soundEnabled) return;
+            initAudio();
+            try {
+                const notes = [523.25, 659.25, 783.99, 1046.50]; // C5, E5, G5, C6
+                notes.forEach((freq, idx) => {
+                    const osc = audioCtx.createOscillator();
+                    const gain = audioCtx.createGain();
+                    osc.type = 'sawtooth';
+                    osc.frequency.setValueAtTime(freq, audioCtx.currentTime + idx * 0.12);
+                    gain.gain.setValueAtTime(0.2, audioCtx.currentTime + idx * 0.12);
+                    gain.gain.exponentialRampToValueAtTime(0.001, audioCtx.currentTime + idx * 0.12 + 0.4);
+                    osc.connect(gain);
+                    gain.connect(audioCtx.destination);
+                    osc.start(audioCtx.currentTime + idx * 0.12);
+                    osc.stop(audioCtx.currentTime + idx * 0.12 + 0.4);
+                });
+            } catch (e) { console.error(e); }
+        }
+
+        // Game State
+        let cardNumbers = []; // 5x5 array of numbers
+        let markedState = []; // 5x5 array of booleans
+        let hasWonBefore = false;
+
+        // Helper to generate random numbers in range without duplicates
+        function getRandomNumbers(min, max, count) {
+            let arr = [];
+            while(arr.length < count) {
+                let r = Math.floor(Math.random() * (max - min + 1)) + min;
+                if(arr.indexOf(r) === -1) arr.push(r);
+            }
+            return arr;
+        }
+
+        function generateNewCard() {
+            playClickSound();
+            hasWonBefore = false;
+            
+            // Generate columns according to standard Bingo rules
+            // B: 1-15, I: 16-30, N: 31-45 (center FREE), G: 46-60, O: 61-75
+            const bCol = getRandomNumbers(1, 15, 5);
+            const iCol = getRandomNumbers(16, 30, 5);
+            const nColPart = getRandomNumbers(31, 45, 4);
+            const gCol = getRandomNumbers(46, 60, 5);
+            const oCol = getRandomNumbers(61, 75, 5);
+
+            cardNumbers = [];
+            markedState = [];
+
+            for (let row = 0; row < 5; row++) {
+                let rowNums = [];
+                let rowMarks = [];
+                for (let col = 0; col < 5; col++) {
+                    if (col === 0) rowNums.push(bCol[row]);
+                    else if (col === 1) rowNums.push(iCol[row]);
+                    else if (col === 2) {
+                        if (row === 2) rowNums.push('FREE');
+                        else rowNums.push(row < 2 ? nColPart[row] : nColPart[row - 1]);
+                    }
+                    else if (col === 3) rowNums.push(gCol[row]);
+                    else if (col === 4) rowNums.push(oCol[row]);
+
+                    // Center cell is always marked (FREE)
+                    if (row === 2 && col === 2) {
+                        rowMarks.push(true);
+                    } else {
+                        rowMarks.push(false);
+                    }
+                }
+                cardNumbers.push(rowNums);
+                markedState.push(rowMarks);
+            }
+
+            renderBoard();
+            updateBingoStatus();
+        }
+
+        function resetCard() {
+            playClickSound();
+            hasWonBefore = false;
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    if (!(r === 2 && c === 2)) {
+                        markedState[r][c] = false;
+                    }
+                }
+            }
+            renderBoard();
+            updateBingoStatus();
+        }
+
+        function toggleCell(row, col) {
+            if (row === 2 && col === 2) return; // FREE cell cannot be toggled
+            playMarkSound();
+            markedState[row][col] = !markedState[row][col];
+            renderBoard();
+            checkBingo();
+        }
+
+        function renderBoard() {
+            const grid = document.getElementById('bingoGrid');
+            grid.innerHTML = '';
+
+            for (let r = 0; r < 5; r++) {
+                for (let c = 0; c < 5; c++) {
+                    const isFree = (r === 2 && c === 2);
+                    const isMarked = markedState[r][c];
+                    const num = cardNumbers[r][c];
+
+                    const cell = document.createElement('button');
+                    cell.className = `bingo-cell aspect-square rounded-2xl font-bold text-lg sm:text-2xl flex flex-col items-center justify-center transition-all duration-200 relative overflow-hidden shadow-md border ${
+                        isFree 
+                            ? 'bg-gradient-to-br from-amber-500 to-yellow-600 text-slate-950 border-amber-300 shadow-amber-500/30 font-black cursor-default'
+                            : isMarked
+                                ? 'bg-gradient-to-br from-blue-600 to-cyan-600 text-white border-cyan-400 shadow-cyan-500/40 scale-95'
+                                : 'bg-slate-800/80 hover:bg-slate-700/80 text-slate-200 border-blue-500/20'
+                    }`;
+
+                    if (isFree) {
+                        cell.innerHTML = `
+                            <span class="text-xs sm:text-sm uppercase tracking-wider font-extrabold">FREE</span>
+                            <span class="text-lg">⭐</span>
+                        `;
+                    } else {
+                        cell.innerText = num;
+                        if (isMarked) {
+                            const badge = document.createElement('div');
+                            badge.className = 'absolute inset-0 bg-blue-500/20 backdrop-blur-[1px] flex items-center justify-center';
+                            badge.innerHTML = '<span class="text-cyan-300 text-3xl font-black drop-shadow-md">✓</span>';
+                            cell.appendChild(badge);
+                        }
+                    }
+
+                    if (!isFree) {
+                        cell.onclick = () => toggleCell(r, c);
+                    }
+
+                    grid.appendChild(cell);
+                }
+            }
+        }
+
+        function checkBingo() {
+            let bingoCount = 0;
+
+            // Check rows
+            for (let r = 0; r < 5; r++) {
+                if (markedState[r].every(val => val)) bingoCount++;
+            }
+
+            // Check columns
+            for (let c = 0; c < 5; c++) {
+                let colWin = true;
+                for (let r = 0; r < 5; r++) {
+                    if (!markedState[r][c]) {
+                        colWin = false;
+                        break;
+                    }
+                }
+                if (colWin) bingoCount++;
+            }
+
+            // Check diagonal top-left to bottom-right
+            let diag1Win = true;
+            for (let i = 0; i < 5; i++) {
+                if (!markedState[i][i]) diag1Win = false;
+            }
+            if (diag1Win) bingoCount++;
+
+            // Check diagonal top-right to bottom-left
+            let diag2Win = true;
+            for (let i = 0; i < 5; i++) {
+                if (!markedState[i][4 - i]) diag2Win = false;
+            }
+            if (diag2Win) bingoCount++;
+
+            updateBingoStatus(bingoCount);
+
+            if (bingoCount > 0 && !hasWonBefore) {
+                hasWonBefore = true;
+                triggerVictory();
+            }
+        }
+
+        function updateBingoStatus(count = 0) {
+            const statusEl = document.getElementById('bingoStatus');
+            if (count > 0) {
+                statusEl.className = 'text-amber-300 font-bold bg-amber-500/20 px-3 py-1 rounded-full border border-amber-500/50 animate-pulse';
+                statusEl.innerText = `🎉 BINGO! สำเร็จแล้ว (${count} แถว)`;
+            } else {
+                statusEl.className = 'text-amber-400 font-bold bg-amber-500/10 px-3 py-1 rounded-full border border-amber-500/30';
+                statusEl.innerText = 'สถานะ: กำลังลุ้นบิงโก';
+            }
+        }
+
+        function triggerVictory() {
+            playVictoryFanfare();
+            startFireworks();
+            showVictoryModal();
+        }
+
+        function showVictoryModal() {
+            const modal = document.getElementById('victoryModal');
+            const content = document.getElementById('victoryModalContent');
+            modal.classList.remove('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-95');
+            content.classList.add('scale-100');
+        }
+
+        function closeVictoryModal() {
+            playClickSound();
+            const modal = document.getElementById('victoryModal');
+            const content = document.getElementById('victoryModalContent');
+            modal.classList.add('opacity-0', 'pointer-events-none');
+            content.classList.remove('scale-100');
+            content.classList.add('scale-95');
+        }
+
+        const canvas = document.getElementById('fireworksCanvas');
+        const ctx = canvas.getContext('2d');
+        let particles = [];
+        let animationId = null;
+
+        function resizeCanvas() {
+            canvas.width = window.innerWidth;
+            canvas.height = window.innerHeight;
+        }
+
+        window.addEventListener('resize', resizeCanvas);
+
+        class FireworkParticle {
+            constructor(x, y, color) {
+                this.x = x;
+                this.y = y;
+                this.color = color;
+                const angle = Math.random() * Math.PI * 2;
+                const speed = Math.random() * 8 + 2;
+                this.vx = Math.cos(angle) * speed;
+                this.vy = Math.sin(angle) * speed;
+                this.alpha = 1;
+                this.decay = Math.random() * 0.015 + 0.010;
+            }
+            update() {
+                this.x += this.vx;
+                this.y += this.vy;
+                this.vy += 0.15; // gravity
+                this.alpha -= this.decay;
+            }
+            draw() {
+                ctx.save();
+                ctx.globalAlpha = this.alpha;
+                ctx.fillStyle = this.color;
+                ctx.beginPath();
+                ctx.arc(this.x, this.y, 3, 0, Math.PI * 2);
+                ctx.fill();
+                ctx.restore();
+            }
+        }
+
+        function createFirework(x, y) {
+            const colors = ['#f59e0b', '#38bdf8', '#ef4444', '#10b981', '#a855f7', '#ffffff'];
+            const color = colors[Math.floor(Math.random() * colors.length)];
+            for (let i = 0; i < 60; i++) {
+                particles.push(new FireworkParticle(x, y, color));
+            }
+        }
+
+        function startFireworks() {
+            canvas.classList.remove('hidden');
+            resizeCanvas();
+            particles = [];
+
+            // Spawn multiple fireworks
+            for (let i = 0; i < 5; i++) {
+                setTimeout(() => {
+                    const x = Math.random() * (canvas.width * 0.8) + (canvas.width * 0.1);
+                    const y = Math.random() * (canvas.height * 0.5) + (canvas.height * 0.1);
+                    createFirework(x, y);
+                }, i * 300);
+            }
+
+            if (animationId) cancelAnimationFrame(animationId);
+            animateFireworks();
+
+            // Stop after 4 seconds
+            setTimeout(() => {
+                cancelAnimationFrame(animationId);
+                ctx.clearRect(0, 0, canvas.width, canvas.height);
+                canvas.classList.add('hidden');
+            }, 4000);
+        }
+
+        function animateFireworks() {
+            ctx.clearRect(0, 0, canvas.width, canvas.height);
+            particles.forEach((p, index) => {
+                p.update();
+                p.draw();
+                if (p.alpha <= 0) {
+                    particles.splice(index, 1);
+                }
+            });
+            if (particles.length > 0) {
+                animationId = requestAnimationFrame(animateFireworks);
+            }
+        }
+
+        // Initialize game on load
+        window.onload = function() {
+            generateNewCard();
+        };
+    </script>
+</body>
+</html>
